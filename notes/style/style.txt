@@ -1,0 +1,32 @@
+Variable Naming Conventions:
+
+	Class Name:			ClassName
+	Interface Name:		IInterfaceName
+	Function Name:		FunctionName
+	Constants:			VARIABLE_NAME
+	Member Variables: 	m_[variable]
+	Global Variables: 	g_[variable]
+	Arguments/Params:	arg
+	Accessor:			VariableName
+	
+Examples:
+
+	public class MyObject
+	{
+		// It's over nine-thousand
+		const int OVER_NINE_THOUSAAAAND = 9001;
+	
+		string m_myMember;
+		
+        /// <summary>
+        /// Do something when something needs to be done.
+        /// </summary>
+        /// <param name="param1"></param>
+        /// <param name="param2"></param>
+		public void DoSomething(int param1, int param2)
+		{
+			// Why is this happening?
+			param1 = param2;
+		}
+	
+	}

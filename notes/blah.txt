@@ -1,0 +1,11 @@
+GameStateManager
+	List<GameState>
+
+GameState : ILoadable, IUpdateable, IDrawable
+	m_transitionPosition;
+	Load()
+	Unload()
+	Update()
+	Draw()
+	UpdateTransition()
+	ExitState()

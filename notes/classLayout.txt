@@ -1,0 +1,15 @@
+Libraries
+
+	OpenTK
+
+Classes
+
+	Gameplay
+		GameBoard
+		GameEntity
+			InputComponent
+			GraphicsComponent
+			AudioComponent
+			BodyComponent
+			PhysicsComponent
+		GameTime

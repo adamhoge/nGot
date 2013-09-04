@@ -1,0 +1,15 @@
+Simple tetris like game with power ups
+can chain power ups
+4 types of power ups
+vertical line
+standard horizontal line
+radius (maybe 3 tiles)
+reverse gravity?
+gravity increases every 30 seconds
+tiles are worth 1 point each
+multipliers are given for each additional line
+multipliers are given for each power up
+gravity increases variably depending on average points per second
+the overall multiplier increases everytime gravity increases
+there is only 1 level
+when a row is removed with a power up, it activates
