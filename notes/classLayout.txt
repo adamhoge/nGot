@@ -13,3 +13,39 @@ Classes
 			BodyComponent
 			PhysicsComponent
 		GameTime
+		
+	Gauge
+	Clamp
+
+
+	
+GameTime
+	members
+		int total, elapsed, frameRate
+	methods
+		Elapsed
+		Total
+
+	
+Game
+	members
+		GameBoard board
+		List PowerUps
+
+	
+GameBoard
+	members
+		tiles[,] board // 2d array of nGot tiles
+		tileSize : rectangle
+
+	
+NGot
+	members
+		GameBoard reference myBoard
+		Color[4] cornerColors
+
+	
+PowerUp
+	members
+		GameTime start, finish
+		Enum type
