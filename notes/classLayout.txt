@@ -18,6 +18,92 @@ Classes
 	Clamp
 
 
+SingletonInterface
+
+
+DrawableInterface
+	methods
+		Draw
+
+
+AudibleInterface
+	methods
+		Start
+		Stop
+	properties
+		Loop
+	members
+		bool looping = false;
+	
+	
+ObserverInterface
+	methods
+		Dispatch
+
+		
+ObserverableInterface
+	methods
+		Register
+		Unregister
+		Notify
+	member
+		List<ObserverInterace> observers
+		
+	
+UpdateableInterface
+	methods
+		Update
+
+		
+Point<T> : where T is a number
+	members
+		T x, y
+
+
+Rectangle<T> : where is a number
+	members
+		T width, height
+	
+	
+ResourceManager : Singleton
+	methods
+		static Texture2d LoadImage(string path)
+	members
+		
+
+Texture2D : IDrawable
+	members
+		image reference
+
+		
+GameState : IDrawable, IUpdateable
+	members
+		GameTime ransitionOn
+		GameTime transitionOff
+		float transitionDelta
+	
+	
+InputState
+	properties
+		KeyDown
+		KeyUp
+		MouseDown
+		MouseUp
+		MouseMove
+	members
+		List<Key> keysLastPressed
+		List<Key> keysPressed
+		List<Key> keysHeld
+		List<MouseButtons> mouseLastPressed
+		List<MouseButtons> mousePressed
+		List<MouseButtons> mouseHeld
+		Point<int> mousePosition
+	
+StateManager : Singleton
+	members
+		List<GameState> allStates
+		List<GameState> activeStates
+	
 	
 GameTime
 	members
@@ -27,22 +113,33 @@ GameTime
 		Total
 
 	
-Game
+Game : GameState
 	members
 		GameBoard board
 		List PowerUps
+		ResourceManager resourceManager
+		ScreenManager screenManager
 
 	
 GameBoard
 	members
-		tiles[,] board // 2d array of nGot tiles
-		tileSize : rectangle
+		NGot[,] board // 2d array of nGot tiles
+		Rectangle<int> tileSize
+		Rectangle<int> tilePadding
 
-	
+
+Alloy
+	members
+		NGot[4] tiles
+		PowerUp[4] powerups
+		
 NGot
 	members
 		GameBoard reference myBoard
 		Color[4] cornerColors
+		Texture2D texture
+		Point<float>[2] textureCoords 	// textureCoords[0] = lowerLeft, textureCoords[1] = upperRight
+										// should also be clamped between 0 and 1
 
 	
 PowerUp
