@@ -41,78 +41,75 @@ public class HandleInput : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
+        bool left = Input.GetButtonDown("Left");
+        bool right = Input.GetButtonDown("Right");
+        bool down = Input.GetButtonDown("Down");
+
         Vector3 offset = Vector3.zero;
-        float dx = Input.GetAxis("Horizontal");
-        float dy = Input.GetAxis("Vertical");
+        offset.x += left ? -0.64f : 0.0f;
+        offset.x += right ? 0.64f : 0.0f;
+        offset.y += down ? -0.64f : 0.0f;
 
-        if (dx > 0.0f)
-        {
-            dx = 0.64f;
-        }
-        else if (dx < 0.0f)
-        {
-            dx = -0.64f;
-        }
+        bool counterClock = Input.GetButtonDown("Counter Clockwise");
+        bool clock = Input.GetButtonDown("Clockwise");
 
-        if (dy >= 0.0f)
-        {
-            dy = 0.0f;
-        }
-        else
-        {
-            dy = -0.64f;
-        }
+        float rotation = counterClock ? 90.0f : 0.0f;
+        rotation += clock ? -90.0f : 0.0f;
 
-        offset.x += dx;
-        offset.y += dy;
-        if (Time.time - dt >= inputRate)
-        {
-            dt = Time.time;
-            MoveAlloy(offset);
-        }
+        MoveAlloy(offset, rotation);
 	}
 
     public void DropAlloy()
     {
-        MoveAlloy(new Vector3(0.0f, -0.64f));
+        MoveAlloy(new Vector3(0.0f, -0.64f), 0.0f);
     }
 
-    private void MoveAlloy(Vector3 offset)
+    private void MoveAlloy(Vector3 offset, float degrees)
     {
+        // pretend translate the alloy first
+        currentAlloy.transform.Translate(offset);
+        currentAlloy.transform.Rotate(0.0f, 0.0f, degrees);
         var ingots = currentAlloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot").ToArray();
 
         int[] x = new int[ingots.Count()];
         int[] y = new int[ingots.Count()];
           
+        // save the new positions
+        for (int i = 0; i < ingots.Count(); i++)
+        {
+            Vector3 newPos = ingots[i].transform.position;
+            x[i] = Convert.ToInt32(newPos.x / 0.64f);
+            y[i] = Convert.ToInt32(newPos.y / 0.64f);
+        }
+
+        // move the alloy back
+        currentAlloy.transform.Rotate(0.0f, 0.0f, -degrees);
+        currentAlloy.transform.Translate(-offset);
+
         bool lastline = false;
         bool willCollide = false;
 
-        for (int i = 0; i < ingots.Count(); i++)
+        for (int i = 0; i < x.Length; i++)
         {
-            Vector3 newPos = ingots[i].transform.position + offset;
-            x[i] = Convert.ToInt32(newPos.x / 0.64f);
-            y[i] = Convert.ToInt32(newPos.y / 0.64f);
-
             // out of bounds, don't update
             if (x[i] < 0 || x[i] >= gameBoard.width)
             {
                 return;
             }
 
-            // below the board, need new piece
+            // below the board, need new alloy
             if (y[i] < 0)
             {
                 lastline = true;
+                continue;
             }
-        }
-        
-        for (int i = 0; i < ingots.Count(); i++)
-        {
+
             // this piece is not on the board, don't check it
-            if (y[i] >= gameBoard.height || y[i] < 0)
+            if (y[i] >= gameBoard.height)
             {
                 continue;
             }
+
             // otherwise check for a piece where we want to move
             if (gameBoard.board[x[i], y[i]] != null)
             {
@@ -122,6 +119,8 @@ public class HandleInput : MonoBehaviour
 
         Debug.Log(MakeGameBoard());
 
+        // get the current ingots, not the moved ones
+        ingots = currentAlloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot").ToArray();
         if (lastline || willCollide)
         {
             MakeNewAlloy();
@@ -137,8 +136,8 @@ public class HandleInput : MonoBehaviour
             return;
         }
 
-        Vector3 vec = new Vector3(currentAlloy.transform.position.x + offset.x, currentAlloy.transform.position.y + offset.y, currentAlloy.transform.position.z);
-        currentAlloy.transform.position = vec;
+        currentAlloy.transform.Translate(offset);
+        currentAlloy.transform.Rotate(0.0f, 0.0f, degrees);
     }
 
     private void MakeNewAlloy()
