@@ -17,7 +17,7 @@ public class CreateGameBoard : MonoBehaviour {
 	// Use this for initialization
 	void Start ()
     {
-        List<GameObject> ingots = Resources.LoadAll<GameObject>("Ingots").ToList();
+        //List<GameObject> ingots = Resources.LoadAll<GameObject>("Ingots").ToList();
         //var collider = ingots[0].GetComponent<BoxCollider2D>();
         //float w = collider.size.x;
         //float h = collider.size.y;
