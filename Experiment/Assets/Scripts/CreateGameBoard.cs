@@ -17,15 +17,14 @@ public class CreateGameBoard : MonoBehaviour {
 	// Use this for initialization
 	void Start ()
     {
-        //List<GameObject> ingots = Resources.LoadAll<GameObject>("Ingots").ToList();
-        //var collider = ingots[0].GetComponent<BoxCollider2D>();
-        //float w = collider.size.x;
-        //float h = collider.size.y;
+        List<GameObject> background = Resources.LoadAll<GameObject>("Background").ToList();
+        float w = 0.64f;
+        float h = 0.64f;
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
-                //board[i, j] = Instantiate(ingots[Random.Range(0, ingots.Count)], new Vector3(transform.position.x + i*w, transform.position.y + j*h, transform.position.z), Quaternion.identity) as GameObject;
+                var bgTile = Instantiate(background[0], new Vector3(transform.position.x + i * w, transform.position.y + j * h, 0.1f), Quaternion.identity) as GameObject;
                 board[i, j] = null;
             }
         }

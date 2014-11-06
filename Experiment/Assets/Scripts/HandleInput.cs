@@ -9,10 +9,12 @@ public class HandleInput : MonoBehaviour
     GameObject currentAlloy = null;
     SpawnAlloy spawner = null;
     Vector3 pos;
-    Vector3 cameraUp;
+    GameObject camera;
     CreateGameBoard gameBoard = null;
 
     public float timeIncrements;
+
+    private enum Direction { Up, Down, Left, Right };
 
     void Awake()
     {
@@ -31,198 +33,259 @@ public class HandleInput : MonoBehaviour
 	// Use this for initialization
 	void Start ()
     {
-        //var camera = GameObject.FindGameObjectWithTag("Main Camera");
-        //if (camera != null)
-        //{
-        //    cameraUp = camera.transform.up;
-        //}
-
+        camera = GameObject.FindGameObjectWithTag("MainCamera");
+        if (camera == null)
+        {
+            // do something for no camera
+            // should never happen
+        }
         MakeNewAlloy();
-        //InvokeRepeating("DropAlloy", 0.5f, timeIncrements);
+        InvokeRepeating("DropAlloy", 0.5f, timeIncrements);
 	}
 
 	// Update is called once per frame
 	void Update ()
     {
+        if (Input.GetButtonDown("Quit"))
+        {
+            Application.Quit();
+        }
         bool left = Input.GetButtonDown("Left");
         bool right = Input.GetButtonDown("Right");
         bool down = Input.GetButtonDown("Down");
-
-        float x = 0.0f, y = 0.0f;
-        x += left ? -0.64f : 0.0f;
-        x += right ? 0.64f : 0.0f;
-        y += down ? -0.64f : 0.0f;
+        bool up = Input.GetButtonDown("Up");
 
         bool counterClockwise = Input.GetButtonDown("Counter Clockwise");
         bool clockwise = Input.GetButtonDown("Clockwise");
 
-        float rotation = counterClockwise ? 90.0f : 0.0f;
-        rotation += clockwise ? -90.0f : 0.0f;
+        if (left)
+            MoveAlloy(currentAlloy, Direction.Left);
+        if (right)
+            MoveAlloy(currentAlloy, Direction.Right);
+        if (down)
+            MoveAlloy(currentAlloy, Direction.Down);
+        if (up)
+            MoveAlloy(currentAlloy, Direction.Up);
 
-        // get the individual ingots from the alloy
-        var ingots = currentAlloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot").ToArray();
+        if (counterClockwise)
+            RotateAlloy(currentAlloy, -90.0f);
+        if (clockwise)
+            RotateAlloy(currentAlloy, 90.0f);
 
-        int[] xs = new int[ingots.Count()];
-        int[] ys = new int[ingots.Count()];
-
-        // save the positions
-        for (int i = 0; i < ingots.Count(); i++)
+        bool quit = false;
+        // assume piece is in a valid position
+        var ingots = currentAlloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot");
+        if (Map(Stops, ingots, gameBoard, false))
         {
-            Vector3 newPos = ingots[i].transform.position;
-            xs[i] = Convert.ToInt32(newPos.x / 0.64f);
-            ys[i] = Convert.ToInt32(newPos.y / 0.64f);
-        }
-
-        if (WillStop(xs, ys))
-        {
-            SaveCurrent(ingots);
+            quit = SaveCurrent(ingots);
+            // delete rows
             MakeNewAlloy();
-            return;
-        }
-
-        if (left || right || down)
-        {
-            MoveAlloy(x, y);
-        }
-
-        if (clockwise || counterClockwise)
-        {
-            RotateAlloy(rotation);
         }
 
         Debug.Log(MakeGameBoard());
+        if (quit)
+        {
+            Application.LoadLevel("main");
+        }
 	}
 
     public void DropAlloy()
     {
-        MoveAlloy(0.0f, -0.64f);
+        MoveAlloy(currentAlloy, Direction.Down);
     }
 
-    private void RotateAlloy(float degrees)
+    private void RotateAlloy(GameObject alloy, float degrees)
     {
-        currentAlloy.transform.Rotate(0.0f, 0.0f, degrees);
-        var ingots = currentAlloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot").ToArray();
-
-        int[] xs = new int[ingots.Count()];
-        int[] ys = new int[ingots.Count()];
-
-        // save the positions
-        for (int i = 0; i < ingots.Count(); i++)
+        alloy.transform.Rotate(0.0f, 0.0f, degrees);
+        var ingots = alloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot");
+        if (Map(OutOfBounds, ingots, gameBoard, false) ||
+            Map(Collides, ingots, gameBoard, false))
         {
-            Vector3 newPos = ingots[i].transform.position;
-            xs[i] = Convert.ToInt32(newPos.x / 0.64f);
-            ys[i] = Convert.ToInt32(newPos.y / 0.64f);
-            // don't update out of bounds
-            if (xs[i] < 0 || xs[i] >= gameBoard.width || ys[i] <= 0)
-            {
-                currentAlloy.transform.Rotate(0.0f, 0.0f, -degrees);
-                return;
-            }
-        }
-
-        // rotate back on collision
-        if (Collides(xs, ys))
-        {
-            currentAlloy.transform.Rotate(0.0f, 0.0f, -degrees);
+            alloy.transform.Rotate(0.0f, 0.0f, -degrees);
         }
     }
 
-    private void MoveAlloy(float x, float y)
+    private void MoveAlloy(GameObject alloy, Direction d)
     {
-        // what direction are we facing?
+        // what direction are is the current alloy up vector facing?
         Vector3 offset = Vector3.zero;
-        offset.x += x;
-        offset.y += y;
-        //float cos = Vector3.Dot(cameraUp, currentAlloy.transform.up);
-        //Debug.Log(cos.ToString());
+        int up = Convert.ToInt32(Vector3.Dot(camera.transform.up, currentAlloy.transform.up));
+        int right = Convert.ToInt32(Vector3.Dot(camera.transform.right, currentAlloy.transform.up));
 
-        var ingots = currentAlloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot").ToArray();
-
-        int[] xs = new int[ingots.Count()];
-        int[] ys = new int[ingots.Count()];
-
-        // save the positions
-        for (int i = 0; i < ingots.Count(); i++)
+        // normal
+        if (up == 1)
         {
-            Vector3 newPos = ingots[i].transform.position + offset;
-            xs[i] = Convert.ToInt32(newPos.x / 0.64f);
-            ys[i] = Convert.ToInt32(newPos.y / 0.64f);
-            // don't update out of bounds
-            if (xs[i] < 0 || xs[i] >= gameBoard.width)
+            switch (d)
             {
-                return;
+                case Direction.Up:
+                    offset.y = 0.64f;
+                    break;
+                case Direction.Down:
+                    offset.y = -0.64f;
+                    break;
+                case Direction.Left:
+                    offset.x = -0.64f;
+                    break;
+                case Direction.Right:
+                    offset.x = 0.64f;
+                    break;
             }
         }
-
-        if (!Collides(xs, ys))
+        // 180 degress, upside down
+        else if (up == -1)
         {
-            currentAlloy.transform.Translate(offset);
+            switch (d)
+            {
+                case Direction.Up:
+                    offset.y = -0.64f;
+                    break;
+                case Direction.Down:
+                    offset.y = 0.64f;
+                    break;
+                case Direction.Left:
+                    offset.x = 0.64f;
+                    break;
+                case Direction.Right:
+                    offset.x = -0.64f;
+                    break;
+            }
+        }
+        // 90 degrees, right
+        else if (right == 1)
+        {
+            switch (d)
+            {
+                case Direction.Up:
+                    offset.x = -0.64f;
+                    break;
+                case Direction.Down:
+                    offset.x = 0.64f;
+                    break;
+                case Direction.Left:
+                    offset.y = -0.64f;
+                    break;
+                case Direction.Right:
+                    offset.y = 0.64f;
+                    break;
+            }
+        }
+        // -90 degrees, left
+        else if (right == -1)
+        {
+            switch (d)
+            {
+                case Direction.Up:
+                    offset.x = 0.64f;
+                    break;
+                case Direction.Down:
+                    offset.x = -0.64f;
+                    break;
+                case Direction.Left:
+                    offset.y = 0.64f;
+                    break;
+                case Direction.Right:
+                    offset.y = -0.64f;
+                    break;
+            }
+        }
+        alloy.transform.Translate(offset);
+        var ingots = alloy.GetComponentsInChildren<Transform>().Where(t => t.tag == "Ingot");
+        if (Map(OutOfBounds, ingots, gameBoard) ||
+            Map(Collides, ingots, gameBoard))
+        {
+            alloy.transform.Translate(-offset);
         }
     }
 
-    private bool WillStop(int[] xs, int[] ys)
+    private TResult Map<TResult>(Func<Transform, CreateGameBoard, TResult> f, IEnumerable<Transform> ingots, CreateGameBoard board, TResult initial) where TResult : IEquatable<TResult>
     {
-        bool lastline = false;
-        for (int i = 0; i < xs.Length && i < ys.Length; ++i)
+        foreach (var ingot in ingots)
         {
-            if (ys[i] == 0)
+            TResult temp = f(ingot, board);
+            if (!initial.Equals(temp))
             {
-                lastline = true;
-            }
-
-            if (ys[i] < 1 || ys[i] >= gameBoard.height + 1 ||
-                xs[i] < 0 || xs[i] >= gameBoard.width)
-            {
-                continue;
-            }
-
-            if (gameBoard.board[xs[i], ys[i] - 1] != null)
-            {
-                lastline = true;
+                return temp;
             }
         }
-
-        return lastline;
+        return initial;
     }
 
-    private bool Collides(int[] xs, int[] ys)
+    private bool Map(Func<Transform, CreateGameBoard, bool> f, IEnumerable<Transform> ingots, CreateGameBoard board)
     {
-        bool willCollide = false;
-        for (int i = 0; i < xs.Length && i < ys.Length; i++)
+        return Map<bool>(f, ingots, board, false);
+    }
+
+    private bool OutOfBounds(Transform ingot, CreateGameBoard board)
+    {
+        int x = Convert.ToInt32(ingot.transform.position.x / 0.64f);
+        int y = Convert.ToInt32(ingot.transform.position.y / 0.64f);
+        //Debug.Log(string.Format("{0}, {1}", x, y));
+        if (x < 0 || x >= board.width)
         {
-            // out of bounds, don't update
-            if (xs[i] < 0 || xs[i] >= gameBoard.width)
-            {
-                continue;
-            }
-
-            // out of bounds, don't update
-            if (ys[i] < 0 || ys[i] >= gameBoard.height)
-            {
-                continue;
-            }
-
-            // otherwise check for a piece where we want to move
-            if (gameBoard.board[xs[i], ys[i]] != null)
-            {
-                willCollide = true;
-            }
+            return true;
         }
-        return willCollide;
+        if (y < 0)
+        {
+            return true;
+        }
+        return false;
     }
 
-    private void SaveCurrent(IEnumerable<Transform> pieces)
+    private bool Collides(Transform ingot, CreateGameBoard board)
     {
+        int x = Convert.ToInt32(ingot.transform.position.x / 0.64f);
+        int y = Convert.ToInt32(ingot.transform.position.y / 0.64f);
+        if ((x >= 0 && x < board.width) &&
+            (y >= 0 && y < board.height) && 
+            (board.board[x, y] != null))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    // assume the ingot is on the board
+    private bool Stops(Transform ingot, CreateGameBoard board)
+    {
+        int x = Convert.ToInt32(ingot.transform.position.x / 0.64f);
+        int y = Convert.ToInt32(ingot.transform.position.y / 0.64f) - 1;
+        // last line
+        if (y < 0)
+        {
+            return true;
+        }
+        // above the board
+        if (y >= board.height)
+        {
+            return false;
+        }
+        // piece below
+        if (board.board[x, y] != null)
+        {
+            return true;
+        }
+        return false; 
+    }
+
+    private bool SaveCurrent(IEnumerable<Transform> pieces)
+    {
+        bool done = false;
         foreach (var piece in pieces)
         {
             int x = Convert.ToInt32(piece.position.x / 0.64f);
             int y = Convert.ToInt32(piece.position.y / 0.64f);
-            if (x < 0 || x > gameBoard.width || y < 0 || y > gameBoard.height)
+            if (x < 0 || x >= gameBoard.width || y < 0)
             {
+                continue;
+            }
+            if (y >= gameBoard.height)
+            {
+                done = true;
                 continue;
             }
             gameBoard.board[x, y] = piece.gameObject;
         }
+        return done;
     }
 
     private void MakeNewAlloy()
